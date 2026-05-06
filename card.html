@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>My Card | CTC Capital Elite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%); min-height: 100vh; }
+        .card-3d { perspective: 1000px; transition: transform 0.6s; }
+        .card-3d:hover { transform: rotateY(5deg) rotateX(-5deg); }
+        .card-inner { background: linear-gradient(135deg, #2563eb 0%, #0056B3 50%, #003D80 100%); border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.1); position: relative; overflow: hidden; }
+        .card-inner::before { content: ''; position: absolute; top: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%); animation: shine 3s infinite; }
+        @keyframes shine { 0% { transform: translate(-100%, -100%); } 100% { transform: translate(100%, 100%); } }
+        .card-content { position: relative; z-index: 2; padding: 2rem; height: 100%; }
+        .hologram-text { background: linear-gradient(135deg, #ffffff 0%, #a0aec0 50%, #ffffff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
+        .chip { width: 3.5rem; height: 3rem; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.2), 0 2px 5px rgba(0, 0, 0, 0.1); }
+        .logo-animation { animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        .stats-card { background: white; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); transition: all 0.3s ease; }
+        .stats-card:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
+        .loading-skeleton { background: linear-gradient(90deg, #f0f4f8 0%, #f8fcff 50%, #f0f4f8 100%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body class="pb-24 lg:pb-0 lg:pl-64">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <header class="mb-8 sm:mb-12">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <p class="text-sm uppercase tracking-[0.35em] text-slate-500">My Financial Card</p>
+                    <h1 class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900">Your CTC Card</h1>
+                </div>
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-blue-100 rounded-full flex items-center justify-center logo-animation">
+                    <i data-lucide="credit-card" class="w-6 sm:w-7 h-6 sm:h-7 text-blue-600"></i>
+                </div>
+            </div>
+            <p class="text-slate-600 max-w-2xl">Your premium financial card with exclusive benefits and rewards</p>
+        </header>
+
+        <div class="card-3d mb-8 sm:mb-12 rounded-3xl overflow-hidden">
+            <div class="card-inner">
+                <div class="card-content flex flex-col justify-between">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 sm:mb-12">
+                        <div>
+                            <p class="text-xs sm:text-sm uppercase tracking-widest text-white/60 mb-2 sm:mb-3">CTC Capital</p>
+                            <p class="text-base sm:text-lg font-bold text-white">ELITE CARD</p>
+                        </div>
+                        <div class="chip mt-4 sm:mt-0">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                <rect x="2" y="2" width="28" height="28" rx="4" fill="#fbbf24"/>
+                                <rect x="4" y="4" width="24" height="8" fill="#f59e0b"/>
+                                <circle cx="10" cy="20" r="3" fill="#f59e0b"/>
+                                <circle cx="22" cy="20" r="3" fill="#f59e0b"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mb-8 sm:mb-12 text-center">
+                        <p class="text-xs sm:text-sm uppercase tracking-widest text-white/60 mb-3 sm:mb-4">Card Number</p>
+                        <p class="text-2xl sm:text-4xl font-bold tracking-[0.2em] hologram-text font-mono" id="cardNumber">
+                            <span class="loading-skeleton inline-block w-48 h-8 rounded"></span>
+                        </p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p class="text-xs uppercase tracking-widest text-white/60 mb-2 sm:mb-3">Cardholder</p>
+                            <p class="text-lg sm:text-xl font-bold text-white uppercase tracking-wide" id="cardholderName">
+                                <span class="loading-skeleton inline-block w-40 h-6 rounded"></span>
+                            </p>
+                        </div>
+                        <div class="flex gap-6 sm:gap-8 mt-4 sm:mt-0">
+                            <div>
+                                <p class="text-xs uppercase tracking-widest text-white/60 mb-2">Expires</p>
+                                <p class="text-lg sm:text-xl font-bold text-white font-mono" id="expiryDate">MM/YY</p>
+                            </div>
+                            <div>
+                                <p class="text-xs uppercase tracking-widest text-white/60 mb-2">CVV</p>
+                                <p id="cvv" class="text-lg sm:text-xl font-bold text-white font-mono">***</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8 sm:mb-12">
+            <div class="stats-card">
+                <p class="text-xs sm:text-sm text-slate-600 uppercase tracking-wide mb-2 sm:mb-3">Card Status</p>
+                <p class="text-lg sm:text-2xl font-bold text-green-600" id="cardStatus">Loading...</p>
+                <p class="text-xs sm:text-sm text-slate-600 mt-2">Active and ready to use</p>
+            </div>
+            <div class="stats-card">
+                <p class="text-xs sm:text-sm text-slate-600 uppercase tracking-wide mb-2 sm:mb-3">Daily Limit</p>
+                <p class="text-lg sm:text-2xl font-bold text-blue-600" id="dailyLimit">Loading...</p>
+                <p class="text-xs sm:text-sm text-slate-600 mt-2">Available today</p>
+            </div>
+            <div class="stats-card">
+                <p class="text-xs sm:text-sm text-slate-600 uppercase tracking-wide mb-2 sm:mb-3">Account Balance</p>
+                <p class="text-lg sm:text-2xl font-bold text-slate-900" id="accountBalance">Loading...</p>
+                <p class="text-xs sm:text-sm text-slate-600 mt-2">Available funds</p>
+            </div>
+            <div class="stats-card">
+                <p class="text-xs sm:text-sm text-slate-600 uppercase tracking-wide mb-2 sm:mb-3">Reward Points</p>
+                <p class="text-lg sm:text-2xl font-bold text-purple-600" id="rewardPoints">Loading...</p>
+                <p class="text-xs sm:text-sm text-slate-600 mt-2">Points earned</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 mb-8 sm:mb-12">
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                <i data-lucide="sparkles" class="w-6 h-6 text-blue-600"></i>
+                Card Features & Benefits
+            </h2>
+            <div class="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 mb-1">Fraud Protection</h3>
+                        <p class="text-sm text-slate-600">24/7 fraud detection and zero liability</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="zap" class="w-5 h-5 text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 mb-1">Instant Transactions</h3>
+                        <p class="text-sm text-slate-600">Real-time payment processing worldwide</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="gift" class="w-5 h-5 text-purple-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 mb-1">Reward Points</h3>
+                        <p class="text-sm text-slate-600">Earn 2% cash back on all purchases</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="globe" class="w-5 h-5 text-orange-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 mb-1">Global Access</h3>
+                        <p class="text-sm text-slate-600">Accepted in 190+ countries worldwide</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid sm:grid-cols-3 gap-4 sm:gap-6">
+            <button id="backToProfileButton" class="border border-slate-200 hover:bg-slate-50 text-slate-900 font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                Back to Profile
+            </button>
+            <button id="lockCardButton" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">
+                <i data-lucide="lock" class="w-5 h-5"></i>
+                <span id="lockButtonLabel">Lock Card</span>
+            </button>
+            <button id="cardSettingsButton" class="border border-slate-200 hover:bg-slate-50 text-slate-900 font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+                Card Settings
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, onSnapshot, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDVlCsLQZCIXTSa_lQGNiC5ORRfngCGG2E",
+            authDomain: "ctc-capital-elite.firebaseapp.com",
+            projectId: "ctc-capital-elite",
+            storageBucket: "ctc-capital-elite.appspot.com",
+            messagingSenderId: "821905163636",
+            appId: "1:821905163636:web:0c3e78fbe9c1cf14f2a5c8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const lockButton = document.getElementById('lockCardButton');
+        const lockButtonLabel = document.getElementById('lockButtonLabel');
+        let cardLocked = false;
+
+        function formatCardNumber(raw) {
+            return raw.match(/.{1,4}/g).join(' ');
+        }
+
+        function generateCardNumber(userId) {
+            let hash = 0;
+            for (let i = 0; i < userId.length; i++) {
+                hash = ((hash << 5) - hash) + userId.charCodeAt(i);
+                hash |= 0;
+            }
+            const segment1 = String(Math.abs(hash) % 9000 + 1000);
+            const segment2 = String(Math.floor(Math.random() * 9000) + 1000);
+            const segment3 = String(Math.floor(Math.random() * 9000) + 1000);
+            const segment4 = '8963';
+            return formatCardNumber(segment1 + segment2 + segment3 + segment4);
+        }
+
+        async function updateLockUI() {
+            const user = auth.currentUser;
+            if (!user) return;
+            cardLocked = !cardLocked;
+            try {
+                await updateDoc(doc(db, 'users', user.uid), {
+                    cardLocked: cardLocked,
+                    updatedAt: new Date()
+                });
+                const statusText = document.getElementById('cardStatus');
+                statusText.textContent = cardLocked ? 'Locked' : 'Active';
+                lockButtonLabel.textContent = cardLocked ? 'Unlock Card' : 'Lock Card';
+                lockButton.classList.toggle('bg-blue-600', !cardLocked);
+                lockButton.classList.toggle('bg-emerald-600', cardLocked);
+                lockButton.classList.toggle('hover:bg-blue-700', !cardLocked);
+                lockButton.classList.toggle('hover:bg-emerald-700', cardLocked);
+            } catch (error) {
+                console.error('Error updating card lock:', error);
+                alert('Failed to update card status');
+                cardLocked = !cardLocked; // revert
+            }
+        }
+
+        lockButton.addEventListener('click', updateLockUI);
+        document.getElementById('cardSettingsButton').addEventListener('click', () => {
+            alert('Card settings are coming soon.');
+        });
+        document.getElementById('backToProfileButton').addEventListener('click', () => {
+            window.location.href = '../pages/profile.html';
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                document.getElementById('cardNumber').textContent = 'Please log in to view your card';
+                document.getElementById('cardholderName').textContent = 'Guest';
+                return;
+            }
+            const userRef = doc(db, 'users', user.uid);
+            onSnapshot(userRef, (snap) => {
+                if (!snap.exists()) return;
+                const userData = snap.data();
+                cardLocked = userData.cardLocked || false;
+                const statusText = document.getElementById('cardStatus');
+                statusText.textContent = cardLocked ? 'Locked' : (user.emailVerified ? 'Active' : 'Pending Verification');
+                lockButtonLabel.textContent = cardLocked ? 'Unlock Card' : 'Lock Card';
+                lockButton.classList.toggle('bg-blue-600', !cardLocked);
+                lockButton.classList.toggle('bg-emerald-600', cardLocked);
+                lockButton.classList.toggle('hover:bg-blue-700', !cardLocked);
+                lockButton.classList.toggle('hover:bg-emerald-700', cardLocked);
+                document.getElementById('cardNumber').textContent = generateCardNumber(user.uid);
+                const fullName = userData.fullName || userData.displayName || 'Cardholder';
+                document.getElementById('cardholderName').textContent = fullName.toUpperCase();
+                const expiry = new Date();
+                expiry.setFullYear(expiry.getFullYear() + 4);
+                const month = String(expiry.getMonth() + 1).padStart(2, '0');
+                const year = String(expiry.getFullYear()).slice(-2);
+                document.getElementById('expiryDate').textContent = `${month}/${year}`;
+                document.getElementById('dailyLimit').textContent = '$10,000.00';
+                const balance = Number(userData.usdBalance || userData.balance || 0);
+                document.getElementById('accountBalance').textContent = `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                document.getElementById('rewardPoints').textContent = `${Math.floor(balance * 0.02 * 100).toLocaleString()}`;
+            });
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

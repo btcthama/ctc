@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow public read access to stocks
+    match /stocks/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Allow public read access to users
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth.uid == userId || request.auth != null;
+      
+      // Portfolio subcollection
+      match /portfolio/{document=**} {
+        allow read: if true;
+        allow write: if request.auth.uid == userId || request.auth != null;
+      }
+    }
+
+    // Allow public read access to pending purchases
+    match /pending_stock_purchases/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Allow public access to admin controls
+    match /admin_controls/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

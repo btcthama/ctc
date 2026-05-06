@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Admin Notifications | CTC Capital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; background: radial-gradient(circle at top, rgba(56, 189, 248, 0.14), transparent 22%), radial-gradient(circle at top right, rgba(234, 179, 8, 0.12), transparent 10%), linear-gradient(180deg, #04101d 0%, #050b14 100%); color: #e2e8f0; }
+        .glass { background: rgba(10, 14, 27, 0.86); border: 1px solid rgba(56, 189, 248, 0.16); backdrop-filter: blur(20px); }
+        .btn-primary { background: linear-gradient(135deg,#0ea5e9,#22d3ee); }
+        .btn-primary:hover { background: linear-gradient(135deg,#38bdf8,#22c55e); }
+        .btn-gold { background: linear-gradient(135deg,#f59e0b,#eab308); }
+        .btn-gold:hover { background: linear-gradient(135deg,#fbbf24,#facc15); }
+        .input-shadow { background: rgba(15,23,42,0.85); border: 1px solid rgba(148, 163, 184, 0.18); }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen max-w-6xl mx-auto p-6 lg:p-8">
+        <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-sm uppercase tracking-[0.35em] text-cyan-300/70">CTC Capital Admin</p>
+                <h1 class="text-4xl font-semibold tracking-tight text-white">Notifications Control</h1>
+                <p class="mt-2 text-slate-400 max-w-2xl">Send targeted alerts, broadcast urgent market updates, and keep users in sync with your platform.</p>
+            </div>
+            <div class="rounded-3xl border border-cyan-500/20 bg-slate-900/80 p-4 text-right">
+                <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Signed-in status</p>
+                <p id="adminStatus" class="mt-2 text-lg font-semibold text-white">Checking auth…</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
+            <section class="glass rounded-[32px] border border-cyan-500/10 p-6 shadow-2xl shadow-cyan-500/5">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold uppercase tracking-[0.35em] text-slate-400">Select user</label>
+                        <select id="userSelect" class="mt-3 w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold uppercase tracking-[0.35em] text-slate-400">Or enter user ID</label>
+                        <input id="userIdInput" class="mt-3 w-full rounded-3xl px-4 py-3 text-white input-shadow outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20" placeholder="Paste target UID here" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold uppercase tracking-[0.35em] text-slate-400">Message</label>
+                        <textarea id="messageInput" rows="5" class="mt-3 w-full rounded-3xl px-4 py-3 text-white input-shadow outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20" placeholder="Type your market alert or account notification"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button id="sendNotification" class="btn-primary rounded-3xl px-6 py-4 text-sm font-semibold uppercase tracking-[0.15em] text-white shadow-lg shadow-cyan-500/10">Send Notification</button>
+                        <button id="broadcastAll" class="btn-gold rounded-3xl px-6 py-4 text-sm font-semibold uppercase tracking-[0.15em] text-slate-950 shadow-lg shadow-amber-500/15">Broadcast to All</button>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="glass rounded-[32px] border border-slate-700/30 p-6">
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">Send History</h2>
+                        <p class="mt-2 text-sm text-slate-400">Recent notification actions are shown here for quick audit.</p>
+                    </div>
+                    <div id="eventLog" class="space-y-3 text-sm text-slate-300">
+                        <div class="rounded-3xl bg-slate-950/70 p-4 border border-slate-700/40">No notifications sent yet.</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDocs, addDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjx0r8OsJAEI8sdTopWadcGYcnD9jcme4",
+            authDomain: "ctc-capital.firebaseapp.com",
+            projectId: "ctc-capital",
+            storageBucket: "ctc-capital.firebasestorage.app",
+            messagingSenderId: "563837502113",
+            appId: "1:563837502113:web:d84ae0e9d07c997ebb26e0",
+            measurementId: "G-7L643VX04V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const adminStatus = document.getElementById('adminStatus');
+        const userSelect = document.getElementById('userSelect');
+        const userIdInput = document.getElementById('userIdInput');
+        const messageInput = document.getElementById('messageInput');
+        const sendNotification = document.getElementById('sendNotification');
+        const broadcastAll = document.getElementById('broadcastAll');
+        const eventLog = document.getElementById('eventLog');
+
+        let currentUser = null;
+        let usersCache = [];
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            adminStatus.textContent = user ? `${user.displayName || user.email || user.uid}` : 'Not signed in';
+            if (!user) {
+                logEvent('Please sign in with an admin account to send notifications.');
+            }
+        });
+
+        async function loadUserOptions() {
+            try {
+                const snapshot = await getDocs(query(collection(db, 'users'), orderBy('email')));
+                usersCache = snapshot.docs.map(doc => ({ uid: doc.id, data: doc.data() }));
+                if (usersCache.length === 0) {
+                    userSelect.innerHTML = '<option value="">No users found</option>';
+                    return;
+                }
+                userSelect.innerHTML = '<option value="">Choose a user</option>' + usersCache.map(user => `\n<option value="${user.uid}">${user.data.email || user.uid}</option>`).join('');
+                logEvent(`${usersCache.length} users loaded.`);
+            } catch (error) {
+                logEvent(`Failed to load users: ${error.message}`);
+            }
+        }
+
+        function logEvent(message) {
+            const item = document.createElement('div');
+            item.className = 'rounded-3xl bg-slate-950/70 border border-slate-700/40 p-4';
+            item.innerHTML = `<p>${message}</p><p class="mt-2 text-xs text-slate-500">${new Date().toLocaleString()}</p>`;
+            eventLog.prepend(item);
+            while (eventLog.children.length > 6) eventLog.removeChild(eventLog.lastChild);
+        }
+
+        async function sendToUser(targetUid, title, message) {
+            const notificationRef = collection(db, 'users', targetUid, 'notifications');
+            await addDoc(notificationRef, {
+                title,
+                message,
+                read: false,
+                createdAt: serverTimestamp(),
+                source: 'admin-notifications'
+            });
+        }
+
+        sendNotification.addEventListener('click', async () => {
+            if (!currentUser) {
+                logEvent('Sign in first to send notifications.');
+                return;
+            }
+
+            const targetUid = (userIdInput.value || userSelect.value || '').trim();
+            const message = messageInput.value.trim();
+            if (!targetUid) {
+                logEvent('Please select or enter a User ID.');
+                return;
+            }
+            if (!message) {
+                logEvent('Message cannot be empty.');
+                return;
+            }
+
+            try {
+                await sendToUser(targetUid, 'Admin Message', message);
+                logEvent(`Notification sent to ${targetUid}.`);
+                messageInput.value = '';
+            } catch (error) {
+                logEvent(`Failed to send notification: ${error.message}`);
+            }
+        });
+
+        broadcastAll.addEventListener('click', async () => {
+            if (!currentUser) {
+                logEvent('Sign in first to broadcast notifications.');
+                return;
+            }
+            if (usersCache.length === 0) {
+                logEvent('No users available to broadcast.');
+                return;
+            }
+
+            const broadcastMessage = 'Market Alert: BTC is surging! Stay ready for price action.';
+            try {
+                await Promise.all(usersCache.map((user) => sendToUser(user.uid, 'Market Alert', broadcastMessage)));
+                logEvent(`Broadcast sent to ${usersCache.length} users.`);
+            } catch (error) {
+                logEvent(`Broadcast failed: ${error.message}`);
+            }
+        });
+
+        loadUserOptions();
+    </script>
+</body>
+</html>
